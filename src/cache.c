@@ -94,9 +94,12 @@ struct cache_entry *dllist_remove_tail(struct cache *cache)
  */
 struct cache *cache_create(int max_size, int hashsize)
 {
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    struct cache *cache = malloc(sizeof(struct cache));
+
+    cache->max_size = max_size;
+    cache->index = hashtable_create(hashsize, NULL);
+
+    return cache;
 }
 
 void cache_free(struct cache *cache)
@@ -142,7 +145,7 @@ void cache_put(struct cache *cache, char *path, char *content_type, void *conten
             struct cache_entry *tail_entry = dllist_remove_tail(cache);
         
             //Remove that same entry from the hashtable, using the entry's `path` and the `hashtable_delete` function.
-            hashtable_delete(cache->index, path);
+            hashtable_delete(cache->index, cache->tail->path);
 
             //Free the cache entry.
             free_entry(tail_entry);
@@ -155,9 +158,9 @@ void cache_put(struct cache *cache, char *path, char *content_type, void *conten
 /**
  * Retrieve an entry from the cache
  */
-struct cache_entry *cache_get(struct cache *cache, char *path)
-{
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
-}
+// struct cache_entry *cache_get(struct cache *cache, char *path)
+// {
+//     ///////////////////
+//     // IMPLEMENT ME! //
+//     ///////////////////
+// }
