@@ -135,13 +135,14 @@ void resp_404(int fd)
  */
 void get_file(int fd, struct cache *cache, char *request_path)
 {
+  (void)cache;
   char filepath[4096];
   struct file_data *filedata; 
   char *mime_type;
 
   snprintf(filepath, sizeof(filepath), "%s/%s", SERVER_ROOT, request_path);
-  
-// //Expires Cache Entries Stret
+
+// //Expires Cache Entries Strech
 //   struct cache_entry *ce = cache_get(filepath);
 
 //   if (time(NULL) - ce->timestamp > 5 * 60){

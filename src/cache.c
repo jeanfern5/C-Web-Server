@@ -11,7 +11,7 @@ struct cache_entry *alloc_entry(char *path, char *content_type, void *content, i
 {
     struct cache_entry *entry = malloc(sizeof(struct cache_entry)); //OR malloc(sizeof(*entry))
     
-    // //shallow copy
+    // //shallow copy - won't work in this case
     // entry->path = path;
     // entry->content_type = content_type;
     // entry->content = content;
@@ -24,11 +24,10 @@ struct cache_entry *alloc_entry(char *path, char *content_type, void *content, i
     entry->content_type = malloc(strlen(content_type) + 1);
     strcpy(entry->content_type, content_type);
 
-    entry->content = content;
-
+    entry->content = malloc(content_length);
+    memcpy(entry->content, content, content_length);
 
     entry->content_length = content_length;
-    memcpy(entry->content, content, content_length);
 
     entry->prev = entry->next = NULL;
 
@@ -113,11 +112,11 @@ struct cache_entry *dllist_remove_tail(struct cache *cache)
  */
 struct cache *cache_create(int max_size, int hashsize)
 {
-    struct cache *cache = malloc(sizeof(struct cache));
+    struct cache *cache = malloc(sizeof *cache);
 
-    cache->max_size = max_size;
     cache->index = hashtable_create(hashsize, NULL);
     cache->head = cache->tail = NULL;
+    cache->max_size = max_size;
     cache->cur_size = 0;
 
     return cache;
@@ -166,22 +165,30 @@ void cache_put(struct cache *cache, char *path, char *content_type, void *conten
             struct cache_entry *tail_entry = dllist_remove_tail(cache);
         
             //Remove that same entry from the hashtable, using the entry's `path` and the `hashtable_delete` function.
-            hashtable_delete(cache->index, cache->tail->path);
+            hashtable_delete(cache->index, tail_entry->path);
 
             //Free the cache entry.
             free_entry(tail_entry);
-
-            //Ensure the size counter for the number of entries in the cache is correct.
-            cache->cur_size--;
         }
 }
 
 /**
  * Retrieve an entry from the cache
  */
-// struct cache_entry *cache_get(struct cache *cache, char *path)
-// {
-//     ///////////////////
-//     // IMPLEMENT ME! //
-//     ///////////////////
-// }
+struct cache_entry *cache_get(struct cache *cache, char *path)
+{
+   //Attempt to find the cache entry pointer by `path` in the hash table.
+   struct cache_entry *entry = hashtable_get(cache->index, path);
+
+   //If not found, return `NULL`.
+   if (entry == NULL)
+   {
+       return NULL;
+   }
+
+   //Move the cache entry to the head of the doubly-linked list.
+   dllist_move_to_head(cache, entry);
+
+   //Return the cache entry pointer.
+   return entry;
+}
