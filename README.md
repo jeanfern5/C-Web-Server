@@ -165,6 +165,7 @@ The hashtable code is already written and can be found in `hashtable.c`.
 
 2. Implement `cache_get()` in `cache.c`.
 
+
    Algorithm:
 
    * Attempt to find the cache entry pointer by `path` in the hash table.
