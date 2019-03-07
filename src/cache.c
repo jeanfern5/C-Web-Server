@@ -9,12 +9,28 @@
  */
 struct cache_entry *alloc_entry(char *path, char *content_type, void *content, int content_length)
 {
-    struct cache_entry *entry = malloc(sizeof(struct cache_entry));
+    struct cache_entry *entry = malloc(sizeof(struct cache_entry)); //OR malloc(sizeof(*entry))
+    
+    // //shallow copy
+    // entry->path = path;
+    // entry->content_type = content_type;
+    // entry->content = content;
+    // entry->content_length = content_length;
 
-    entry->path = path;
-    entry->content_type = content_type;
+    //deep copy
+    entry->path = malloc(strlen(path) + 1);
+    strcpy(entry->path, path);
+
+    entry->content_type = malloc(strlen(content_type) + 1);
+    strcpy(entry->content_type, content_type);
+
     entry->content = content;
+
+
     entry->content_length = content_length;
+    memcpy(entry->content, content, content_length);
+
+    entry->prev = entry->next = NULL;
 
     return entry;
 }
@@ -24,6 +40,9 @@ struct cache_entry *alloc_entry(char *path, char *content_type, void *content, i
  */
 void free_entry(struct cache_entry *entry)
 {
+    free(entry->path);
+    free(entry->content_type);
+    free(entry->content);
     free(entry);
 }
 
@@ -98,6 +117,8 @@ struct cache *cache_create(int max_size, int hashsize)
 
     cache->max_size = max_size;
     cache->index = hashtable_create(hashsize, NULL);
+    cache->head = cache->tail = NULL;
+    cache->cur_size = 0;
 
     return cache;
 }
