@@ -140,6 +140,19 @@ void get_file(int fd, struct cache *cache, char *request_path)
   char *mime_type;
 
   snprintf(filepath, sizeof(filepath), "%s/%s", SERVER_ROOT, request_path);
+  
+// //Expires Cache Entries Stret
+//   struct cache_entry *ce = cache_get(filepath);
+
+//   if (time(NULL) - ce->timestamp > 5 * 60){
+//       //expire
+
+//       //check file timestamp with stat()
+
+//       //if the file is updated:
+//         //delete item from cache
+//   }
+
   filedata = file_load(filepath);
 
   if (filedata == NULL)
@@ -161,12 +174,12 @@ void get_file(int fd, struct cache *cache, char *request_path)
  * "Newlines" in HTTP can be \r\n (carriage return followed by newline) or \n
  * (newline) or \r (carriage return).
  */
-char *find_start_of_body(char *header)
-{
-    ///////////////////
-    // IMPLEMENT ME! // (Stretch)
-    ///////////////////
-}
+// char *find_start_of_body(char *header)
+// {
+//     ///////////////////
+//     // IMPLEMENT ME! // (Stretch)
+//     ///////////////////
+// }
 
 /**
  * Handle HTTP request and send response
