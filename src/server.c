@@ -42,8 +42,11 @@
 /**
  * Send an HTTP response
  *
- * header:       "HTTP/1.1 404 NOT FOUND" or "HTTP/1.1 200 OK", etc.
- * content_type: "text/plain", etc.
+ * header:          "HTTP/1.1 404 NOT FOUND" or "HTTP/1.1 200 OK", etc.
+ * date:            "Wed Dec 20 13:05:11 PST 2017"
+ * content_type:    "text/plain", etc.
+ * content_length:  "41749 "
+ * connection:      "close"
  * body:         the data to send.
  * 
  * Return the value from the send() function.
@@ -55,7 +58,6 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
 
     time_t rawtime;
     struct tm *info;
-    char buffer[80];
     time(&rawtime);
     info = localtime(&rawtime);
 
@@ -72,6 +74,9 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
             "%s\n"
             "\n",
             header, asctime(info), content_type, content_length, body);
+
+    memcpy((response + response_length), body, content_length); //use to read binary/images
+    response_length += content_length;
 
     // Send it all!
     int rv = send(fd, response, response_length, 0);
@@ -90,16 +95,13 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
 void get_d20(int fd)
 {
     // Generate a random number between 1 and 20 inclusive
-    
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    int generate_random_1_to_20 = rand() % 21;
+
+    char body[3];
+    snprintf(body, sizeof(body), "%d", generate_random_1_to_20);
 
     // Use send_response() to send it back as text/plain data
-
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    send_response(fd, "HTTP/1.1 200 OK", "text/plain", body, strlen(body));
 }
 
 /**
@@ -133,9 +135,24 @@ void resp_404(int fd)
  */
 void get_file(int fd, struct cache *cache, char *request_path)
 {
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+  char filepath[4096];
+  struct file_data *filedata; 
+  char *mime_type;
+
+  snprintf(filepath, sizeof(filepath), "%s/%s", SERVER_ROOT, request_path);
+  filedata = file_load(filepath);
+
+  if (filedata == NULL)
+  {
+      resp_404(fd);
+      return;
+  }
+
+  mime_type = mime_type_get(filepath);
+
+  send_response(fd, "HTTP/1.1 200 OK", mime_type, filedata->data, filedata->size);
+
+  file_free(filedata);
 }
 
 /**
@@ -153,12 +170,18 @@ char *find_start_of_body(char *header)
 
 /**
  * Handle HTTP request and send response
+ * 
+ * method    path     protocol
+ *  |          |         |
+ * GET     /example   HTTP/1.1
+ * Host: lambdaschool.com
+ * 
  */
 void handle_http_request(int fd, struct cache *cache)
 {
     const int request_buffer_size = 65536; // 64K
     char request[request_buffer_size];
-    char method[512]; // GET or POST
+    char method[10]; // GET or POST
     char path[8192];
 
     // Read request
@@ -171,31 +194,22 @@ void handle_http_request(int fd, struct cache *cache)
 
     // Read the three components of the first request line
     sscanf(request, "%s %s", method, path);
-    printf("REQUEST: \"%s\" \"%s\"\n", method, path);
+    printf("--> REQUEST: %s %s\n", method, path);
 
     // If GET, handle the get endpoints
     if (strcmp(method, "GET") == 0)
     {
         // Check if it's /d20 and handle that special case
-        // if (strcmp(path, "/d20") == 0)
-        // {
-        //    get_d20(fd); 
-        // }
-        if (strcmp(path, "/test") == 0)
+        if (strcmp(path, "/d20") == 0)
         {
-            send_response(fd, "HTTP/1.1 200 OK", "text/plain", "TESTING!!!", 10);
+           get_d20(fd);
+           return; 
         }
-        else
-        {
-            resp_404(fd); 
-        }
-    }
-    else
-    {           
+         
         // Otherwise serve the requested file by calling get_file()
         get_file(fd, cache, path);
     }
-
+    
     // (Stretch) If POST, handle the post request
 }
 
@@ -245,9 +259,6 @@ int main(void)
         // listenfd is still listening for new connections.
 
         handle_http_request(newfd, cache);
-
-        // //Testing to see if send_response() works
-        // resp_404(newfd);
 
         close(newfd);
     }
